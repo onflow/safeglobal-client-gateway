@@ -1,5 +1,5 @@
 import { TestDbFactory } from '@/__tests__/db.factory';
-import { IConfigurationService } from '@/config/configuration.service.interface';
+import type { IConfigurationService } from '@/config/configuration.service.interface';
 import { AccountsDatasource } from '@/datasources/accounts/accounts.datasource';
 import { FakeCacheService } from '@/datasources/cache/__tests__/fake.cache.service';
 import { MAX_TTL } from '@/datasources/cache/constants';
@@ -8,10 +8,10 @@ import { CachedQueryResolver } from '@/datasources/db/cached-query-resolver';
 import { PostgresDatabaseMigrator } from '@/datasources/db/postgres-database.migrator';
 import { accountDataTypeBuilder } from '@/domain/accounts/entities/__tests__/account-data-type.builder';
 import { upsertAccountDataSettingsDtoBuilder } from '@/domain/accounts/entities/__tests__/upsert-account-data-settings.dto.entity.builder';
-import { AccountDataType } from '@/domain/accounts/entities/account-data-type.entity';
-import { ILoggingService } from '@/logging/logging.interface';
+import type { AccountDataType } from '@/domain/accounts/entities/account-data-type.entity';
+import type { ILoggingService } from '@/logging/logging.interface';
 import { faker } from '@faker-js/faker';
-import postgres from 'postgres';
+import type postgres from 'postgres';
 import { getAddress } from 'viem';
 
 const mockLoggingService = {
@@ -79,7 +79,7 @@ describe('AccountsDatasource tests', () => {
 
       // check the account is stored in the cache
       const cacheDir = new CacheDir(`account_${address}`, '');
-      const cacheContent = await fakeCacheService.get(cacheDir);
+      const cacheContent = await fakeCacheService.hGet(cacheDir);
       expect(JSON.parse(cacheContent as string)).toStrictEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -109,7 +109,7 @@ describe('AccountsDatasource tests', () => {
 
       // check the account is stored in the cache
       const cacheDir = new CacheDir(`account_${address}`, '');
-      const cacheContent = await fakeCacheService.get(cacheDir);
+      const cacheContent = await fakeCacheService.hGet(cacheDir);
       expect(JSON.parse(cacheContent as string)).toStrictEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -235,7 +235,7 @@ describe('AccountsDatasource tests', () => {
         }),
       );
       const cacheDir = new CacheDir(`account_${address}`, '');
-      const cacheContent = await fakeCacheService.get(cacheDir);
+      const cacheContent = await fakeCacheService.hGet(cacheDir);
       expect(JSON.parse(cacheContent as string)).toStrictEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -315,7 +315,7 @@ describe('AccountsDatasource tests', () => {
         `account_data_settings_${address}`,
         '',
       );
-      await fakeCacheService.set(
+      await fakeCacheService.hSet(
         accountDataSettingsCacheDir,
         faker.string.alpha(),
         MAX_TTL,
@@ -324,7 +324,7 @@ describe('AccountsDatasource tests', () => {
         `counterfactual_safes_${address}`,
         '',
       );
-      await fakeCacheService.set(
+      await fakeCacheService.hSet(
         counterfactualSafesCacheDir,
         faker.string.alpha(),
         MAX_TTL,
@@ -334,15 +334,15 @@ describe('AccountsDatasource tests', () => {
       await expect(target.deleteAccount(address)).resolves.not.toThrow();
       await expect(target.getAccount(address)).rejects.toThrow();
       const accountCacheDir = new CacheDir(`account_${address}`, '');
-      const cached = await fakeCacheService.get(accountCacheDir);
+      const cached = await fakeCacheService.hGet(accountCacheDir);
       expect(cached).toBeUndefined();
 
       // the settings and counterfactual safes are deleted from the cache
-      const accountDataSettingsCached = await fakeCacheService.get(
+      const accountDataSettingsCached = await fakeCacheService.hGet(
         accountDataSettingsCacheDir,
       );
       expect(accountDataSettingsCached).toBeUndefined();
-      const counterfactualSafesCached = await fakeCacheService.get(
+      const counterfactualSafesCached = await fakeCacheService.hGet(
         counterfactualSafesCacheDir,
       );
       expect(counterfactualSafesCached).toBeUndefined();
@@ -412,7 +412,7 @@ describe('AccountsDatasource tests', () => {
         ),
       );
       const cacheDir = new CacheDir('account_data_types', '');
-      const cacheContent = await fakeCacheService.get(cacheDir);
+      const cacheContent = await fakeCacheService.hGet(cacheDir);
       expect(JSON.parse(cacheContent as string)).toStrictEqual(
         expect.arrayContaining(
           dataTypes.map((dataType) =>
@@ -508,7 +508,7 @@ describe('AccountsDatasource tests', () => {
       );
 
       expect(actual).toStrictEqual(expect.arrayContaining(expected));
-      const cacheContent = await fakeCacheService.get(
+      const cacheContent = await fakeCacheService.hGet(
         new CacheDir(`account_data_settings_${address}`, ''),
       );
       expect(JSON.parse(cacheContent as string)).toStrictEqual(
@@ -644,7 +644,7 @@ describe('AccountsDatasource tests', () => {
 
       // check the account data settings are stored in the cache
       const cacheDir = new CacheDir(`account_data_settings_${address}`, '');
-      const cacheContent = await fakeCacheService.get(cacheDir);
+      const cacheContent = await fakeCacheService.hGet(cacheDir);
       expect(JSON.parse(cacheContent as string)).toStrictEqual(
         expect.arrayContaining(
           accountDataSettings.map((accountDataSetting) =>

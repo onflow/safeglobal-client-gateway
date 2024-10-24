@@ -6,6 +6,7 @@ import {
   RequestMethod,
 } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ClsMiddleware, ClsModule } from 'nestjs-cls';
 import { join } from 'path';
 import { ChainsModule } from '@/routes/chains/chains.module';
@@ -28,7 +29,7 @@ import { OwnersModule } from '@/routes/owners/owners.module';
 import { AboutModule } from '@/routes/about/about.module';
 import { TransactionsModule } from '@/routes/transactions/transactions.module';
 import { SafesModule } from '@/routes/safes/safes.module';
-import { NotificationsModule } from '@/routes/notifications/notifications.module';
+import { NotificationsModule } from '@/routes/notifications/v1/notifications.module';
 import { EstimationsModule } from '@/routes/estimations/estimations.module';
 import { MessagesModule } from '@/routes/messages/messages.module';
 import { RequestScopedLoggingModule } from '@/logging/logging.module';
@@ -48,7 +49,8 @@ import { AuthModule } from '@/routes/auth/auth.module';
 import { TransactionsViewControllerModule } from '@/routes/transactions/transactions-view.controller';
 import { DelegatesV2Module } from '@/routes/delegates/v2/delegates.v2.module';
 import { AccountsModule } from '@/routes/accounts/accounts.module';
-import { NotificationsModuleV2 } from '@/routes/notifications/notifications.module.v2';
+import { NotificationsModuleV2 } from '@/routes/notifications/v2/notifications.module';
+import { TargetedMessagingModule } from '@/routes/targeted-messaging/targeted-messaging.module';
 
 @Module({})
 export class AppModule implements NestModule {
@@ -63,6 +65,7 @@ export class AppModule implements NestModule {
       confirmationView: isConfirmationViewEnabled,
       delegatesV2: isDelegatesV2Enabled,
       pushNotifications: isPushNotificationsEnabled,
+      targetedMessaging: isTargetedMessagingFeatureEnabled,
     } = configFactory()['features'];
 
     return {
@@ -97,6 +100,7 @@ export class AppModule implements NestModule {
         RootModule,
         SafeAppsModule,
         SafesModule,
+        ...(isTargetedMessagingFeatureEnabled ? [TargetedMessagingModule] : []),
         TransactionsModule,
         ...(isConfirmationViewEnabled
           ? [TransactionsViewControllerModule]
@@ -114,6 +118,7 @@ export class AppModule implements NestModule {
         ConfigurationModule.register(configFactory),
         NetworkModule,
         RequestScopedLoggingModule,
+        ScheduleModule.forRoot(),
         ServeStaticModule.forRoot({
           rootPath: join(__dirname, '..', 'assets'),
           // Excludes the paths under '/' (base url) from being served as static content

@@ -1,10 +1,10 @@
 import { faker } from '@faker-js/faker';
-import { IConfigurationService } from '@/config/configuration.service.interface';
-import { CacheFirstDataSource } from '@/datasources/cache/cache.first.data.source';
-import { ICacheService } from '@/datasources/cache/cache.service.interface';
+import type { IConfigurationService } from '@/config/configuration.service.interface';
+import type { CacheFirstDataSource } from '@/datasources/cache/cache.first.data.source';
+import type { ICacheService } from '@/datasources/cache/cache.service.interface';
 import { CacheDir } from '@/datasources/cache/entities/cache-dir.entity';
 import { HttpErrorFactory } from '@/datasources/errors/http-error-factory';
-import { INetworkService } from '@/datasources/network/network.service.interface';
+import type { INetworkService } from '@/datasources/network/network.service.interface';
 import { TransactionApi } from '@/datasources/transaction-api/transaction-api.service';
 import { backboneBuilder } from '@/domain/backbone/entities/__tests__/backbone.builder';
 import { DataSourceError } from '@/domain/errors/data-source.error';
@@ -22,9 +22,9 @@ import { tokenBuilder } from '@/domain/tokens/__tests__/token.builder';
 import { messageBuilder } from '@/domain/messages/entities/__tests__/message.builder';
 import { proposeTransactionDtoBuilder } from '@/routes/transactions/entities/__tests__/propose-transaction.dto.builder';
 import { erc20TransferBuilder } from '@/domain/safe/entities/__tests__/erc20-transfer.builder';
-import { DeviceType } from '@/domain/notifications/entities/device.entity';
+import { DeviceType } from '@/domain/notifications/v1/entities/device.entity';
 import { getAddress } from 'viem';
-import { ILoggingService } from '@/logging/logging.interface';
+import type { ILoggingService } from '@/logging/logging.interface';
 import { indexingStatusBuilder } from '@/domain/chains/entities/__tests__/indexing-status.builder';
 
 const dataSource = {
@@ -34,8 +34,8 @@ const mockDataSource = jest.mocked(dataSource);
 
 const cacheService = {
   deleteByKey: jest.fn(),
-  set: jest.fn(),
-  get: jest.fn(),
+  hSet: jest.fn(),
+  hGet: jest.fn(),
 } as jest.MockedObjectDeep<ICacheService>;
 const mockCacheService = jest.mocked(cacheService);
 
@@ -396,20 +396,20 @@ describe('TransactionApi', () => {
         `${chainId}_safe_exists_${safe.address}`,
         '',
       );
-      cacheService.get.mockResolvedValueOnce(undefined);
+      cacheService.hGet.mockResolvedValueOnce(undefined);
       networkService.get.mockResolvedValueOnce({ status: 200, data: safe });
 
       const actual = await service.isSafe(safe.address);
 
       expect(actual).toBe(true);
-      expect(cacheService.get).toHaveBeenCalledTimes(1);
-      expect(cacheService.get).toHaveBeenCalledWith(cacheDir);
+      expect(cacheService.hGet).toHaveBeenCalledTimes(1);
+      expect(cacheService.hGet).toHaveBeenCalledWith(cacheDir);
       expect(networkService.get).toHaveBeenCalledTimes(1);
       expect(networkService.get).toHaveBeenCalledWith({
         url: `${baseUrl}/api/v1/safes/${safe.address}`,
       });
-      expect(cacheService.set).toHaveBeenCalledTimes(1);
-      expect(cacheService.set).toHaveBeenCalledWith(
+      expect(cacheService.hSet).toHaveBeenCalledTimes(1);
+      expect(cacheService.hSet).toHaveBeenCalledWith(
         cacheDir,
         'true',
         Number.MAX_SAFE_INTEGER - 1,
@@ -423,16 +423,16 @@ describe('TransactionApi', () => {
         '',
       );
       const isSafe = faker.datatype.boolean();
-      cacheService.get.mockResolvedValueOnce(JSON.stringify(isSafe));
+      cacheService.hGet.mockResolvedValueOnce(JSON.stringify(isSafe));
       networkService.get.mockResolvedValueOnce({ status: 200, data: safe });
 
       const actual = await service.isSafe(safe.address);
 
       expect(actual).toBe(isSafe);
-      expect(cacheService.get).toHaveBeenCalledTimes(1);
-      expect(cacheService.get).toHaveBeenCalledWith(cacheDir);
+      expect(cacheService.hGet).toHaveBeenCalledTimes(1);
+      expect(cacheService.hGet).toHaveBeenCalledWith(cacheDir);
       expect(networkService.get).not.toHaveBeenCalled();
-      expect(cacheService.set).not.toHaveBeenCalledTimes(1);
+      expect(cacheService.hSet).not.toHaveBeenCalledTimes(1);
     });
 
     it('should return false if Safe does not exist', async () => {
@@ -441,20 +441,20 @@ describe('TransactionApi', () => {
         `${chainId}_safe_exists_${safe.address}`,
         '',
       );
-      cacheService.get.mockResolvedValueOnce(undefined);
+      cacheService.hGet.mockResolvedValueOnce(undefined);
       networkService.get.mockResolvedValueOnce({ status: 404, data: null });
 
       const actual = await service.isSafe(safe.address);
 
       expect(actual).toBe(false);
-      expect(cacheService.get).toHaveBeenCalledTimes(1);
-      expect(cacheService.get).toHaveBeenCalledWith(cacheDir);
+      expect(cacheService.hGet).toHaveBeenCalledTimes(1);
+      expect(cacheService.hGet).toHaveBeenCalledWith(cacheDir);
       expect(networkService.get).toHaveBeenCalledTimes(1);
       expect(networkService.get).toHaveBeenCalledWith({
         url: `${baseUrl}/api/v1/safes/${safe.address}`,
       });
-      expect(cacheService.set).toHaveBeenCalledTimes(1);
-      expect(cacheService.set).toHaveBeenCalledWith(
+      expect(cacheService.hSet).toHaveBeenCalledTimes(1);
+      expect(cacheService.hSet).toHaveBeenCalledWith(
         cacheDir,
         'false',
         defaultExpirationTimeInSeconds,
@@ -476,7 +476,7 @@ describe('TransactionApi', () => {
         `${chainId}_safe_exists_${safe.address}`,
         '',
       );
-      cacheService.get.mockResolvedValueOnce(undefined);
+      cacheService.hGet.mockResolvedValueOnce(undefined);
       networkService.get.mockRejectedValueOnce(
         new NetworkResponseError(
           new URL(getSafeUrl),
@@ -489,13 +489,13 @@ describe('TransactionApi', () => {
 
       await expect(service.isSafe(safe.address)).rejects.toThrow(expected);
 
-      expect(cacheService.get).toHaveBeenCalledTimes(1);
-      expect(cacheService.get).toHaveBeenCalledWith(cacheDir);
+      expect(cacheService.hGet).toHaveBeenCalledTimes(1);
+      expect(cacheService.hGet).toHaveBeenCalledWith(cacheDir);
       expect(networkService.get).toHaveBeenCalledTimes(1);
       expect(networkService.get).toHaveBeenCalledWith({
         url: `${baseUrl}/api/v1/safes/${safe.address}`,
       });
-      expect(cacheService.set).not.toHaveBeenCalled();
+      expect(cacheService.hSet).not.toHaveBeenCalled();
     });
   });
 

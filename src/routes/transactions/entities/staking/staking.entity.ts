@@ -1,16 +1,14 @@
 // Present in all calls for native/pooled/defi staking
 export enum StakingStatus {
-  AwaitingEntry = 'AWAITING_ENTRY',
-  RequestedExit = 'REQUESTED_EXIT',
-  SignatureNeeded = 'SIGNATURE_NEEDED',
-  Validating = 'VALIDATING',
-  Withdrawn = 'WITHDRAWN',
-  Unknown = 'UNKNOWN',
+  NotStaked = 'NOT_STAKED',
+  Activating = 'ACTIVATING',
+  DepositInProgress = 'DEPOSIT_IN_PROGRESS',
+  Active = 'ACTIVE',
+  ExitRequested = 'EXIT_REQUESTED',
+  Exiting = 'EXITING',
+  Exited = 'EXITED',
+  Slashed = 'SLASHED',
 }
-
-export type StakingStatusInfo = {
-  status: StakingStatus;
-};
 
 // Present in all deposit calls for native/pooled staking
 export type StakingTimeInfo = {

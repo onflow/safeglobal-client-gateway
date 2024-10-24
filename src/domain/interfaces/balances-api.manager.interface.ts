@@ -1,5 +1,5 @@
-import { IApiManager } from '@/domain/interfaces/api.manager.interface';
-import { IBalancesApi } from '@/domain/interfaces/balances-api.interface';
+import type { IApiManager } from '@/domain/interfaces/api.manager.interface';
+import type { IBalancesApi } from '@/domain/interfaces/balances-api.interface';
 
 export const IBalancesApiManager = Symbol('IBalancesApiManager');
 
@@ -17,12 +17,6 @@ export interface IBalancesApiManager extends IApiManager<IBalancesApi> {
    * @returns {@link IBalancesApi} configured for the input chain ID.
    */
   getApi(chainId: string, safeAddress: `0x${string}`): Promise<IBalancesApi>;
-
-  /**
-   * Gets the {@link SafeBalancesApi} implementation associated with the chainId.
-   * @param chainId - the chain identifier to check.
-   */
-  getSafeBalancesApi(chainId: string): Promise<IBalancesApi>;
 
   /**
    * Gets the list of supported fiat codes.

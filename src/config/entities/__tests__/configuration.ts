@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import configuration from '@/config/entities/configuration';
+import type configuration from '@/config/entities/configuration';
 
 export default (): ReturnType<typeof configuration> => ({
   about: {
@@ -111,6 +111,7 @@ export default (): ReturnType<typeof configuration> => ({
     rpc: faker.number.int(),
     holesky: faker.number.int(),
     indexing: faker.number.int(),
+    staking: faker.number.int(),
     notFound: {
       default: faker.number.int(),
       contract: faker.number.int(),
@@ -136,6 +137,7 @@ export default (): ReturnType<typeof configuration> => ({
     pushNotifications: false,
     nativeStaking: false,
     nativeStakingDecoding: false,
+    targetedMessaging: false,
   },
   httpClient: { requestTimeout: faker.number.int() },
   locking: {
@@ -178,8 +180,16 @@ export default (): ReturnType<typeof configuration> => ({
     limit: faker.number.int({ min: 1 }),
     ttlSeconds: faker.number.int(),
     apiKey: {
+      10: faker.string.hexadecimal({ length: 32 }),
+      56: faker.string.hexadecimal({ length: 32 }),
       100: faker.string.hexadecimal({ length: 32 }),
+      137: faker.string.hexadecimal({ length: 32 }),
+      1101: faker.string.hexadecimal({ length: 32 }),
+      8453: faker.string.hexadecimal({ length: 32 }),
       42161: faker.string.hexadecimal({ length: 32 }),
+      43114: faker.string.hexadecimal({ length: 32 }),
+      59144: faker.string.hexadecimal({ length: 32 }),
+      81457: faker.string.hexadecimal({ length: 32 }),
       11155111: faker.string.hexadecimal({ length: 32 }),
     },
   },
@@ -209,7 +219,7 @@ export default (): ReturnType<typeof configuration> => ({
       42161: faker.internet.url({ appendSlash: false }),
       11155111: faker.internet.url({ appendSlash: false }),
     },
-    explorerBaseUri: faker.internet.url(),
+    explorerBaseUri: faker.internet.url({ appendSlash: true }),
     restrictApps: false,
     allowedApps: [],
     maxNumberOfParts: faker.number.int(),

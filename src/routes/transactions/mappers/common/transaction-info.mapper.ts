@@ -24,9 +24,12 @@ import { SwapOrderHelper } from '@/routes/transactions/helpers/swap-order.helper
 import { TwapOrderMapper } from '@/routes/transactions/mappers/common/twap-order.mapper';
 import { TwapOrderHelper } from '@/routes/transactions/helpers/twap-order.helper';
 import { TwapOrderTransactionInfo } from '@/routes/transactions/entities/swaps/twap-order-info.entity';
-import { NativeStakingDepositTransactionInfo } from '@/routes/transactions/entities/staking/native-staking-info.entity';
+import { NativeStakingDepositTransactionInfo } from '@/routes/transactions/entities/staking/native-staking-deposit-info.entity';
 import { NativeStakingMapper } from '@/routes/transactions/mappers/common/native-staking.mapper';
 import { KilnNativeStakingHelper } from '@/routes/transactions/helpers/kiln-native-staking.helper';
+import { NativeStakingValidatorsExitTransactionInfo } from '@/routes/transactions/entities/staking/native-staking-validators-exit-info.entity';
+import { NativeStakingWithdrawTransactionInfo } from '@/routes/transactions/entities/staking/native-staking-withdraw-info.entity';
+import { KilnDecoder } from '@/domain/staking/contracts/decoders/kiln-decoder.helper';
 
 @Injectable()
 export class MultisigTransactionInfoMapper {
@@ -67,6 +70,7 @@ export class MultisigTransactionInfoMapper {
     private readonly twapOrderHelper: TwapOrderHelper,
     private readonly kilnNativeStakingHelper: KilnNativeStakingHelper,
     private readonly nativeStakingMapper: NativeStakingMapper,
+    private readonly kilnDecoder: KilnDecoder,
   ) {
     this.isRichFragmentsEnabled = this.configurationService.getOrThrow(
       'features.richFragments',
@@ -132,6 +136,22 @@ export class MultisigTransactionInfoMapper {
       // If the transaction is a native staking deposit, we return it immediately
       if (nativeStakingDeposit) {
         return nativeStakingDeposit;
+      }
+
+      const nativeStakingValidatorsExit =
+        await this.mapNativeStakingValidatorsExit(chainId, transaction);
+      // If the transaction is a native staking validators exit, we return it immediately
+      if (nativeStakingValidatorsExit) {
+        return nativeStakingValidatorsExit;
+      }
+
+      const nativeStakingWithdraw = await this.mapNativeStakingWithdraw(
+        chainId,
+        transaction,
+      );
+      // If the transaction is a native staking withdraw, we return it immediately
+      if (nativeStakingWithdraw) {
+        return nativeStakingWithdraw;
       }
     }
 
@@ -306,32 +326,92 @@ export class MultisigTransactionInfoMapper {
     chainId: string,
     transaction: MultisigTransaction | ModuleTransaction,
   ): Promise<NativeStakingDepositTransactionInfo | null> {
-    if (!transaction?.data) {
+    if (!transaction?.data || !transaction.value) {
       return null;
     }
 
-    const nativeStakingTransaction =
-      await this.kilnNativeStakingHelper.findDeposit({
-        chainId,
+    const nativeStakingDepositTransaction =
+      this.kilnNativeStakingHelper.findDepositTransaction({
         to: transaction.to,
         data: transaction.data,
+        value: transaction.value,
       });
 
-    if (!nativeStakingTransaction) {
+    if (!nativeStakingDepositTransaction?.to) {
       return null;
     }
 
     try {
-      const tx = transaction as MultisigTransaction;
-      const isConfirmed =
-        !!tx.confirmations &&
-        tx.confirmations.length >= tx.confirmationsRequired;
-
       return await this.nativeStakingMapper.mapDepositInfo({
         chainId,
-        to: nativeStakingTransaction.to,
-        isConfirmed,
-        depositExecutionDate: transaction.executionDate,
+        to: nativeStakingDepositTransaction.to,
+        value: nativeStakingDepositTransaction.value,
+        txHash: transaction.transactionHash,
+      });
+    } catch (error) {
+      this.loggingService.warn(error);
+      return null;
+    }
+  }
+
+  private async mapNativeStakingValidatorsExit(
+    chainId: string,
+    transaction: MultisigTransaction | ModuleTransaction,
+  ): Promise<NativeStakingValidatorsExitTransactionInfo | null> {
+    if (!transaction?.data || !transaction.value) {
+      return null;
+    }
+
+    const nativeStakingValidatorsExitTransaction =
+      this.kilnNativeStakingHelper.findValidatorsExitTransaction({
+        to: transaction.to,
+        data: transaction.data,
+        value: transaction.value,
+      });
+
+    if (!nativeStakingValidatorsExitTransaction?.to) {
+      return null;
+    }
+
+    try {
+      return await this.nativeStakingMapper.mapValidatorsExitInfo({
+        chainId,
+        safeAddress: transaction.safe,
+        to: nativeStakingValidatorsExitTransaction.to,
+        data: nativeStakingValidatorsExitTransaction.data,
+      });
+    } catch (error) {
+      this.loggingService.warn(error);
+      return null;
+    }
+  }
+
+  private async mapNativeStakingWithdraw(
+    chainId: string,
+    transaction: MultisigTransaction | ModuleTransaction,
+  ): Promise<NativeStakingWithdrawTransactionInfo | null> {
+    if (!transaction?.data || !transaction.value) {
+      return null;
+    }
+
+    const nativeStakingWithdrawTransaction =
+      this.kilnNativeStakingHelper.findWithdrawTransaction({
+        to: transaction.to,
+        data: transaction.data,
+        value: transaction.value,
+      });
+
+    if (!nativeStakingWithdrawTransaction?.to) {
+      return null;
+    }
+
+    try {
+      return await this.nativeStakingMapper.mapWithdrawInfo({
+        chainId,
+        safeAddress: transaction.safe,
+        to: nativeStakingWithdrawTransaction.to,
+        txHash: transaction.transactionHash,
+        data: nativeStakingWithdrawTransaction.data,
       });
     } catch (error) {
       this.loggingService.warn(error);
